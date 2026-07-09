@@ -1,0 +1,427 @@
+import { useEffect, useRef, useState } from 'react';
+import QRCode from 'qrcode';
+import { addItem, createSession, createTierList, Session, uid } from '../api';
+
+// Paleta clásica de TierMaker
+const TIER_COLORS = [
+  '#ff7f7f',
+  '#ffbf7f',
+  '#ffdf7f',
+  '#ffff7f',
+  '#bfff7f',
+  '#7fff7f',
+  '#7fffff',
+  '#7fbfff',
+  '#7f7fff',
+  '#bf7fbf',
+  '#a1a1aa',
+];
+
+const DEFAULT_TIERS = [
+  { label: 'S', color: '#ff7f7f' },
+  { label: 'A', color: '#ffbf7f' },
+  { label: 'B', color: '#ffdf7f' },
+  { label: 'C', color: '#ffff7f' },
+  { label: 'D', color: '#7fff7f' },
+];
+
+interface TierDraft {
+  label: string;
+  color: string;
+}
+
+interface StagedItem {
+  key: string;
+  name: string;
+  file: File;
+  previewUrl: string;
+}
+
+function nameFromFile(file: File): string {
+  return file.name
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .trim();
+}
+
+export default function CreatePage() {
+  const [title, setTitle] = useState('');
+  const [tiers, setTiers] = useState<TierDraft[]>(DEFAULT_TIERS);
+  const [items, setItems] = useState<StagedItem[]>([]);
+  const [session, setSession] = useState<Session | null>(null);
+  const [error, setError] = useState('');
+  const [progress, setProgress] = useState('');
+
+  function addFiles(files: FileList | File[]) {
+    setError('');
+    const all = [...files];
+    if (all.length === 0) {
+      setError(
+        'No llegó ningún archivo. Si arrastrás desde otra página web no funciona: guardá la imagen y subila desde tu explorador de archivos.',
+      );
+      return;
+    }
+    const valid = all.filter((f) =>
+      /^image\/(png|jpe?g|webp|gif)$/.test(f.type),
+    );
+    const rejected = all.length - valid.length;
+    if (rejected > 0) {
+      setError(
+        `${rejected} archivo${rejected === 1 ? '' : 's'} no soportado${
+          rejected === 1 ? '' : 's'
+        } (formato detectado: ${all
+          .filter((f) => !valid.includes(f))
+          .map((f) => f.type || 'desconocido')
+          .join(', ')}). Solo PNG, JPG, WebP o GIF.`,
+      );
+    }
+    const staged = valid.map((file) => ({
+      key: uid(),
+      name: nameFromFile(file),
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setItems((prev) => [...prev, ...staged]);
+  }
+
+  function removeItem(key: string) {
+    setItems((prev) => {
+      const item = prev.find((i) => i.key === key);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((i) => i.key !== key);
+    });
+  }
+
+  async function handleLaunch() {
+    setError('');
+    try {
+      setProgress('Creando tier list...');
+      const tierList = await createTierList(
+        title,
+        tiers.map((t, i) => ({ ...t, position: i })),
+      );
+      for (let i = 0; i < items.length; i++) {
+        setProgress(`Subiendo items ${i + 1}/${items.length}...`);
+        await addItem(tierList.id, items[i].name, items[i].file);
+      }
+      setProgress('Creando sesión...');
+      const s = await createSession(tierList.id);
+      localStorage.setItem(`streamerToken:${s.code}`, s.streamerToken);
+      setSession(s);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setProgress('');
+    }
+  }
+
+  const missing = [
+    !title.trim() && 'poné un título arriba',
+    items.length === 0 && 'subí al menos un item',
+    tiers.length < 2 && 'se necesitan al menos 2 tiers',
+    tiers.some((t) => !t.label.trim()) &&
+      'hay una tier sin nombre (nombrala o eliminala con ⚙)',
+  ].filter((m): m is string => !!m);
+
+  const canLaunch = !progress && missing.length === 0;
+
+  if (session) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6">
+        <div className="max-w-2xl mx-auto">
+          <SessionInfo session={session} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-4 sm:p-6">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Título de la tier list"
+          className="w-full bg-transparent text-center text-3xl font-bold placeholder-zinc-600 border-b-2 border-zinc-800 focus:border-purple-500 focus:outline-none pb-2"
+        />
+
+        {error && (
+          <p className="bg-red-900/50 border border-red-700 rounded px-4 py-2">
+            {error}
+          </p>
+        )}
+
+        <TierRows tiers={tiers} setTiers={setTiers} />
+
+        <ImageBank items={items} addFiles={addFiles} removeItem={removeItem} setItems={setItems} />
+
+        <button
+          onClick={handleLaunch}
+          disabled={!canLaunch}
+          className="w-full py-4 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed font-black text-xl"
+        >
+          {progress || 'Iniciar sesión en vivo'}
+        </button>
+        {missing.length > 0 && (
+          <p className="text-center text-sm text-yellow-500/90 -mt-3">
+            Para iniciar: {missing.join(' · ')}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TierRows(props: {
+  tiers: TierDraft[];
+  setTiers: (v: TierDraft[]) => void;
+}) {
+  const { tiers, setTiers } = props;
+  const [editing, setEditing] = useState<number | null>(null);
+
+  function update(i: number, patch: Partial<TierDraft>) {
+    setTiers(tiers.map((t, j) => (j === i ? { ...t, ...patch } : t)));
+  }
+
+  function move(i: number, dir: -1 | 1) {
+    const j = i + dir;
+    if (j < 0 || j >= tiers.length) return;
+    const next = [...tiers];
+    [next[i], next[j]] = [next[j], next[i]];
+    setTiers(next);
+    if (editing === i) setEditing(j);
+    else if (editing === j) setEditing(i);
+  }
+
+  function remove(i: number) {
+    setTiers(tiers.filter((_, j) => j !== i));
+    setEditing(null);
+  }
+
+  return (
+    <div className="border border-zinc-700 rounded overflow-hidden">
+      {tiers.map((tier, i) => (
+        <div key={i}>
+          <div className="flex items-stretch border-b border-zinc-950 last:border-b-0 min-h-20">
+            <div
+              className="w-24 sm:w-28 shrink-0 flex items-center justify-center p-2"
+              style={{ backgroundColor: tier.color }}
+            >
+              <span className="font-bold text-zinc-900 text-center break-words leading-tight">
+                {tier.label}
+              </span>
+            </div>
+            <div className="flex-1 bg-zinc-800 flex items-center px-4">
+              {i === 0 && (
+                <span className="text-zinc-600 text-sm select-none">
+                  Los items se colocan acá durante la sesión en vivo
+                </span>
+              )}
+            </div>
+            <div className="w-12 shrink-0 bg-zinc-900 flex flex-col items-center justify-center gap-0.5 text-zinc-400">
+              <button
+                onClick={() => setEditing(editing === i ? null : i)}
+                title="Editar tier"
+                className={`hover:text-zinc-100 ${editing === i ? 'text-purple-400' : ''}`}
+              >
+                ⚙
+              </button>
+              <button
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                title="Subir"
+                className="hover:text-zinc-100 disabled:opacity-20 text-xs"
+              >
+                ▲
+              </button>
+              <button
+                onClick={() => move(i, 1)}
+                disabled={i === tiers.length - 1}
+                title="Bajar"
+                className="hover:text-zinc-100 disabled:opacity-20 text-xs"
+              >
+                ▼
+              </button>
+            </div>
+          </div>
+
+          {editing === i && (
+            <div className="bg-zinc-900 border-b border-zinc-950 px-4 py-3 flex flex-wrap items-center gap-3">
+              <input
+                value={tier.label}
+                onChange={(e) => update(i, { label: e.target.value })}
+                placeholder="Nombre de la tier"
+                className="bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 focus:outline-none focus:border-purple-500"
+              />
+              <div className="flex items-center gap-1">
+                {TIER_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => update(i, { color: c })}
+                    className={`w-6 h-6 rounded ${
+                      tier.color === c
+                        ? 'ring-2 ring-white'
+                        : 'hover:ring-1 hover:ring-zinc-400'
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={tier.color}
+                  onChange={(e) => update(i, { color: e.target.value })}
+                  title="Color personalizado"
+                  className="w-6 h-6 rounded cursor-pointer bg-transparent ml-1"
+                />
+              </div>
+              <button
+                onClick={() => remove(i)}
+                disabled={tiers.length <= 2}
+                className="ml-auto text-red-400 hover:text-red-300 disabled:opacity-30 text-sm"
+              >
+                Eliminar tier
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+      <button
+        onClick={() => {
+          setTiers([
+            ...tiers,
+            { label: '', color: TIER_COLORS[tiers.length % TIER_COLORS.length] },
+          ]);
+          setEditing(tiers.length);
+        }}
+        className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-sm"
+      >
+        + Agregar tier
+      </button>
+    </div>
+  );
+}
+
+function ImageBank(props: {
+  items: StagedItem[];
+  addFiles: (files: FileList | File[]) => void;
+  removeItem: (key: string) => void;
+  setItems: React.Dispatch<React.SetStateAction<StagedItem[]>>;
+}) {
+  const { items, addFiles, removeItem, setItems } = props;
+  const [dragOver, setDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function rename(key: string, name: string) {
+    setItems((prev) =>
+      prev.map((i) => (i.key === key ? { ...i, name } : i)),
+    );
+  }
+
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        addFiles(e.dataTransfer.files);
+      }}
+      className={`rounded border-2 border-dashed p-4 transition-colors ${
+        dragOver
+          ? 'border-purple-400 bg-purple-500/10'
+          : 'border-zinc-700 bg-zinc-900/50'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-zinc-400 text-sm">
+          Items ({items.length}) — arrastrá imágenes acá o
+        </p>
+        <button
+          onClick={() => inputRef.current?.click()}
+          className="px-4 py-2 rounded bg-zinc-700 hover:bg-zinc-600 font-bold text-sm"
+        >
+          Subir imágenes
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files) addFiles(e.target.files);
+            e.target.value = '';
+          }}
+        />
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-center text-zinc-600 py-8 select-none">
+          Todavía no hay items
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {items.map((item) => (
+            <div key={item.key} className="w-20 group relative">
+              <img
+                src={item.previewUrl}
+                alt={item.name}
+                className="w-20 h-20 object-cover rounded"
+              />
+              <button
+                onClick={() => removeItem(item.key)}
+                title="Quitar"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-xs leading-none hidden group-hover:block"
+              >
+                ✕
+              </button>
+              <input
+                value={item.name}
+                onChange={(e) => rename(item.key, e.target.value)}
+                className="w-full mt-1 bg-transparent text-[11px] text-center text-zinc-300 border border-transparent hover:border-zinc-700 focus:border-purple-500 focus:bg-zinc-900 rounded focus:outline-none px-0.5"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SessionInfo({ session }: { session: Session }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const voteUrl = `${window.location.origin}/vote/${session.code}`;
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      QRCode.toCanvas(canvasRef.current, voteUrl, { width: 200, margin: 1 });
+    }
+  }, [voteUrl]);
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 text-center space-y-4">
+      <p className="text-zinc-400">Código de sesión</p>
+      <p className="text-5xl font-mono font-bold tracking-widest text-purple-400">
+        {session.code}
+      </p>
+      <a
+        href={voteUrl}
+        className="block text-purple-400 hover:text-purple-300 underline break-all"
+      >
+        {voteUrl}
+      </a>
+      <div className="flex justify-center">
+        <canvas ref={canvasRef} className="rounded-lg bg-white p-1" />
+      </div>
+      <a
+        href={`/host/${session.code}`}
+        className="inline-block px-6 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold"
+      >
+        Ir a la vista de host →
+      </a>
+    </div>
+  );
+}

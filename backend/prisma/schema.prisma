@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TierList {
+  id        String    @id @default(uuid())
+  title     String
+  createdAt DateTime  @default(now())
+  tiers     Tier[]
+  items     Item[]
+  sessions  Session[]
+}
+
+model Tier {
+  id         String   @id @default(uuid())
+  tierListId String
+  tierList   TierList @relation(fields: [tierListId], references: [id], onDelete: Cascade)
+  label      String
+  color      String
+  position   Int
+}
+
+model Item {
+  id         String   @id @default(uuid())
+  tierListId String
+  tierList   TierList @relation(fields: [tierListId], references: [id], onDelete: Cascade)
+  name       String
+  imageUrl   String?
+}
+
+enum SessionStatus {
+  LOBBY
+  LIVE
+  FINISHED
+}
+
+model Session {
+  id            String        @id @default(uuid())
+  tierListId    String
+  tierList      TierList      @relation(fields: [tierListId], references: [id], onDelete: Cascade)
+  code          String        @unique
+  status        SessionStatus @default(LOBBY)
+  streamerToken String
+  createdAt     DateTime      @default(now())
+  results       ItemResult[]
+}
+
+model ItemResult {
+  id             String   @id @default(uuid())
+  sessionId      String
+  session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  itemId         String
+  streamerTierId String
+  votesBreakdown Json
+  totalVotes     Int
+  revealedAt     DateTime @default(now())
+}
