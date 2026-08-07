@@ -1,7 +1,7 @@
 services:
   - type: web
     name: tierlist-backend
-    runtime: node
+    env: node
     rootDir: backend
     buildCommand: npm ci && npx prisma generate && npm run build
     startCommand: npx prisma migrate deploy && node dist/main.js
@@ -21,7 +21,7 @@ services:
 
   - type: web
     name: tierlist-frontend
-    runtime: static
+    env: static
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
