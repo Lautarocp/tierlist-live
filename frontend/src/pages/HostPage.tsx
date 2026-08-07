@@ -137,7 +137,7 @@ export default function HostPage() {
             live={live}
             code={code}
             noItemsLeft={noItemsLeft}
-            itemsById={itemsById}
+
             onStart={() => emitAck('startSession', { code })}
             onNext={() => emitAck('nextItem', { code })}
             onFinish={() => emitAck('finishSession', { code })}
@@ -374,12 +374,11 @@ function CenterZone(props: {
   live: ReturnType<typeof useLiveSession>;
   code: string;
   noItemsLeft: boolean;
-  itemsById: Map<string, Item>;
   onStart: () => void;
   onNext: () => void;
   onFinish: () => void;
 }) {
-  const { live, noItemsLeft, itemsById, onStart, onNext, onFinish } = props;
+  const { live, noItemsLeft, onStart, onNext, onFinish } = props;
   const [pending, setPending] = useState(false);
 
   useEffect(() => {

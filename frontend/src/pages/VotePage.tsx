@@ -100,7 +100,6 @@ export default function VotePage() {
         />
       ) : live.reveal ? (
         <RevealSection
-          item={itemsById.get(live.reveal.itemId)}
           reveal={live.reveal}
           tiers={tiers}
           myTierId={myVotes[live.reveal.itemId]}
@@ -196,7 +195,6 @@ function ActiveVote(props: {
 }
 
 function RevealSection(props: {
-  item?: Item;
   reveal: {
     streamerTierId: string;
     breakdown: { tierId: string; count: number; pct: number }[];
@@ -205,7 +203,7 @@ function RevealSection(props: {
   tiers: { id: string; label: string; color: string; position: number }[];
   myTierId?: string;
 }) {
-  const { item, reveal, tiers, myTierId } = props;
+  const { reveal, tiers, myTierId } = props;
   const streamerTier = tiers.find((t) => t.id === reveal.streamerTierId);
   const matched = myTierId === reveal.streamerTierId;
 
