@@ -8,9 +8,7 @@ services:
     plan: free
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: tierlist-db
-          property: connectionString
+        sync: false
       - key: REDIS_URL
         fromService:
           name: tierlist-redis
@@ -39,8 +37,4 @@ services:
     maxmemoryPolicy: noeviction
     ipAllowList: []
 
-databases:
-  - name: tierlist-db
-    databaseName: tierlist
-    user: tierlist
-    plan: free
+# DATABASE_URL must be set manually in Render dashboard (use Neon free tier)
