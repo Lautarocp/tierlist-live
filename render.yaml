@@ -9,6 +9,7 @@ services:
     name: tierlist-redis
     plan: free
     maxmemoryPolicy: noeviction
+    ipAllowList: []
 
   - type: web
     name: tierlist-backend
