@@ -227,16 +227,16 @@ function TierRows(props: { tiers: TierDraft[]; setTiers: (v: TierDraft[]) => voi
             </div>
 
             {/* Controles */}
-            <div className="w-12 shrink-0 bg-zinc-900 flex flex-col items-center justify-center gap-0.5 text-zinc-400">
+            <div className="w-14 shrink-0 bg-zinc-900 flex flex-col items-center justify-center gap-1 text-zinc-400">
               <button
                 onClick={() => setEditing(isEditing ? null : i)}
                 title={t('editTier')}
-                className={`hover:text-zinc-100 ${isEditing ? 'text-purple-400' : ''}`}
+                className={`text-lg hover:text-zinc-100 ${isEditing ? 'text-purple-400' : ''}`}
               >
                 ⚙
               </button>
-              <button onClick={() => move(i, -1)} disabled={i === 0} title={t('moveUp')} className="hover:text-zinc-100 disabled:opacity-20 text-xs">▲</button>
-              <button onClick={() => move(i, 1)} disabled={i === tiers.length - 1} title={t('moveDown')} className="hover:text-zinc-100 disabled:opacity-20 text-xs">▼</button>
+              <button onClick={() => move(i, -1)} disabled={i === 0} title={t('moveUp')} className="text-sm hover:text-zinc-100 disabled:opacity-20">▲</button>
+              <button onClick={() => move(i, 1)} disabled={i === tiers.length - 1} title={t('moveDown')} className="text-sm hover:text-zinc-100 disabled:opacity-20">▼</button>
             </div>
           </div>
         );
