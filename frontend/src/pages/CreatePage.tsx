@@ -228,20 +228,22 @@ function TierRows(props: { tiers: TierDraft[]; setTiers: (v: TierDraft[]) => voi
             </div>
 
             {/* Controles */}
-            <div className="w-14 shrink-0 bg-zinc-900 flex flex-col items-center justify-center gap-1 text-zinc-400">
+            <div className="w-16 shrink-0 bg-zinc-900 flex flex-row items-center justify-center gap-1 text-zinc-400 px-1">
               <button
                 onClick={() => setEditing(isEditing ? null : i)}
                 title={t('editTier')}
                 className={`hover:text-zinc-100 ${isEditing ? 'text-purple-400' : ''}`}
               >
-                <Cog size={18} />
+                <Cog size={22} />
               </button>
-              <button onClick={() => move(i, -1)} disabled={i === 0} title={t('moveUp')} className="hover:text-zinc-100 disabled:opacity-20">
-                <ChevronUp size={18} />
-              </button>
-              <button onClick={() => move(i, 1)} disabled={i === tiers.length - 1} title={t('moveDown')} className="hover:text-zinc-100 disabled:opacity-20">
-                <ChevronDown size={18} />
-              </button>
+              <div className="flex flex-col items-center">
+                <button onClick={() => move(i, -1)} disabled={i === 0} title={t('moveUp')} className="hover:text-zinc-100 disabled:opacity-20">
+                  <ChevronUp size={22} />
+                </button>
+                <button onClick={() => move(i, 1)} disabled={i === tiers.length - 1} title={t('moveDown')} className="hover:text-zinc-100 disabled:opacity-20">
+                  <ChevronDown size={22} />
+                </button>
+              </div>
             </div>
           </div>
         );
