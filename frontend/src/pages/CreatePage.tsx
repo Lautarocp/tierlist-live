@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { addItem, createSession, createTierList, Session, uid } from '../api';
 import { useT } from '../i18n';
@@ -231,12 +232,16 @@ function TierRows(props: { tiers: TierDraft[]; setTiers: (v: TierDraft[]) => voi
               <button
                 onClick={() => setEditing(isEditing ? null : i)}
                 title={t('editTier')}
-                className={`text-lg hover:text-zinc-100 ${isEditing ? 'text-purple-400' : ''}`}
+                className={`hover:text-zinc-100 ${isEditing ? 'text-purple-400' : ''}`}
               >
-                ⚙
+                <Settings2 size={18} />
               </button>
-              <button onClick={() => move(i, -1)} disabled={i === 0} title={t('moveUp')} className="text-sm hover:text-zinc-100 disabled:opacity-20">▲</button>
-              <button onClick={() => move(i, 1)} disabled={i === tiers.length - 1} title={t('moveDown')} className="text-sm hover:text-zinc-100 disabled:opacity-20">▼</button>
+              <button onClick={() => move(i, -1)} disabled={i === 0} title={t('moveUp')} className="hover:text-zinc-100 disabled:opacity-20">
+                <ChevronUp size={18} />
+              </button>
+              <button onClick={() => move(i, 1)} disabled={i === tiers.length - 1} title={t('moveDown')} className="hover:text-zinc-100 disabled:opacity-20">
+                <ChevronDown size={18} />
+              </button>
             </div>
           </div>
         );
