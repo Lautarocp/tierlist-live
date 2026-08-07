@@ -37,6 +37,7 @@ services:
     name: tierlist-redis
     plan: free
     maxmemoryPolicy: noeviction
+    ipAllowList: []
 
 databases:
   - name: tierlist-db
