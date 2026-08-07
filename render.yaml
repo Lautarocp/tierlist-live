@@ -1,4 +1,15 @@
+databases:
+  - name: tierlist-db
+    plan: free
+    databaseName: tierlist
+    user: tierlist
+
 services:
+  - type: redis
+    name: tierlist-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+
   - type: web
     name: tierlist-backend
     env: node
@@ -8,9 +19,14 @@ services:
     plan: free
     envVars:
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: tierlist-db
+          property: connectionString
       - key: REDIS_URL
-        sync: false
+        fromService:
+          name: tierlist-redis
+          type: redis
+          property: connectionString
       - key: NODE_ENV
         value: production
 
@@ -18,7 +34,7 @@ services:
     name: tierlist-frontend
     env: static
     rootDir: frontend
-    buildCommand: npm ci && npm run build
+    buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
