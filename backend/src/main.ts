@@ -8,6 +8,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors({ origin: '*', methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] });
+  app.getHttpAdapter().getInstance().disable('x-powered-by');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   const uploadsDir = join(process.cwd(), 'uploads');

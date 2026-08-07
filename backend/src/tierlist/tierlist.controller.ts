@@ -50,10 +50,14 @@ export class TierListController {
   ) {
     if (file) {
       const filename = `${randomUUID()}.jpg`;
-      await sharp(file.buffer)
-        .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 82 })
-        .toFile(join('./uploads', filename));
+      try {
+        await sharp(file.buffer)
+          .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 82 })
+          .toFile(join('./uploads', filename));
+      } catch {
+        throw new BadRequestException('El archivo no es una imagen válida');
+      }
       file.filename = filename;
     }
     return this.service.addItem(id, name, file);
