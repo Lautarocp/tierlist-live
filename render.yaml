@@ -39,7 +39,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://tierlist-backend.onrender.com
+        value: https://tierlist-backend-ptki.onrender.com
     routes:
       - type: rewrite
         source: /*
