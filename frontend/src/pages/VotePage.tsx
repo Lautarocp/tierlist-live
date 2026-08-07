@@ -77,7 +77,6 @@ export default function VotePage() {
   }
 
   const tiers = live.snapshot.tierList.tiers;
-  const itemsById = new Map(live.snapshot.tierList.items.map((i) => [i.id, i]));
 
   return (
     <Shell code={code} title={live.snapshot.tierList.title}>
