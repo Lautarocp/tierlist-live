@@ -30,6 +30,16 @@ export default function HostPage() {
     [live.snapshot],
   );
 
+  useEffect(() => {
+    if (!live.snapshot) return;
+    for (const item of live.snapshot.tierList.items) {
+      if (item.imageUrl) {
+        const img = new Image();
+        img.src = `${API_URL}${item.imageUrl}`;
+      }
+    }
+  }, [live.snapshot?.tierList.id]);
+
   function emitAck(event: string, payload: object) {
     setActionError('');
     live.socket?.emit(event, payload, (res: { error?: string }) => {
@@ -106,6 +116,7 @@ export default function HostPage() {
           sensors={sensors}
           collisionDetection={pointerWithin}
           onDragEnd={handleDragEnd}
+          autoScroll={false}
         >
           <div className="space-y-1 mb-8">
             {tierList.tiers.map((tier) => (
@@ -340,22 +351,21 @@ function DraggableItem({ item }: { item: Item }) {
           ? { transform: `translate(${transform.x}px, ${transform.y}px)` }
           : undefined
       }
-      className={`inline-flex flex-col items-center gap-2 bg-zinc-900 border-2 border-purple-500 rounded-xl p-4 cursor-grab touch-none select-none ${
-        isDragging ? 'opacity-80 z-50 relative' : ''
+      className={`group relative inline-flex flex-col items-center gap-2 bg-zinc-900 border-2 border-purple-500 rounded-xl p-4 cursor-grab touch-none select-none hover:z-10 ${
+        isDragging ? 'opacity-80 z-50' : ''
       }`}
     >
       {item.imageUrl ? (
         <img
           src={`${API_URL}${item.imageUrl}`}
           alt={item.name}
-          className="w-32 h-32 object-cover rounded-lg pointer-events-none"
+          className="w-32 h-32 object-cover rounded-lg pointer-events-none transition-transform duration-200 group-hover:scale-[2.5]"
         />
       ) : (
-        <div className="w-32 h-32 rounded-lg bg-zinc-800 flex items-center justify-center text-3xl">
+        <div className="w-32 h-32 rounded-lg bg-zinc-800 flex items-center justify-center text-3xl transition-transform duration-200 group-hover:scale-[2.5]">
           🖼
         </div>
       )}
-      <p className="text-xl font-bold">{item.name}</p>
     </div>
   );
 }
@@ -370,6 +380,20 @@ function CenterZone(props: {
   onFinish: () => void;
 }) {
   const { live, noItemsLeft, itemsById, onStart, onNext, onFinish } = props;
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    if (live.activeItem) setPending(false);
+  }, [live.activeItem]);
+
+  useEffect(() => {
+    if (noItemsLeft) setPending(false);
+  }, [noItemsLeft]);
+
+  function handleNext() {
+    setPending(true);
+    onNext();
+  }
 
   if (live.status === 'LOBBY') {
     return (
@@ -404,19 +428,18 @@ function CenterZone(props: {
     );
   }
 
-  if (live.reveal) {
-    const item = itemsById.get(live.reveal.itemId);
+  if (live.reveal && !pending) {
     return (
       <div className="space-y-4 max-w-xl mx-auto">
         <p className="text-center text-xl font-bold">
-          Así votó el chat{item ? ` “${item.name}”` : ''} —{' '}
+          Así votó el chat —{' '}
           {live.reveal.totalVotes} voto
           {live.reveal.totalVotes === 1 ? '' : 's'}
         </p>
         <div className="flex justify-center gap-3">
           {!noItemsLeft ? (
             <button
-              onClick={onNext}
+              onClick={handleNext}
               className="px-8 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-lg"
             >
               Siguiente item →
@@ -435,10 +458,14 @@ function CenterZone(props: {
     );
   }
 
+  if (pending) {
+    return <p className="text-center text-zinc-400">Cargando siguiente item...</p>;
+  }
+
   return (
     <div className="text-center space-y-4">
       <button
-        onClick={onNext}
+        onClick={handleNext}
         className="px-8 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-lg"
       >
         Siguiente item →

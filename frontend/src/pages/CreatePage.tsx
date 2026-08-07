@@ -153,7 +153,7 @@ export default function CreatePage() {
 
         <TierRows tiers={tiers} setTiers={setTiers} />
 
-        <ImageBank items={items} addFiles={addFiles} removeItem={removeItem} setItems={setItems} />
+        <ImageBank items={items} addFiles={addFiles} removeItem={removeItem} />
 
         <button
           onClick={handleLaunch}
@@ -305,17 +305,10 @@ function ImageBank(props: {
   items: StagedItem[];
   addFiles: (files: FileList | File[]) => void;
   removeItem: (key: string) => void;
-  setItems: React.Dispatch<React.SetStateAction<StagedItem[]>>;
 }) {
-  const { items, addFiles, removeItem, setItems } = props;
+  const { items, addFiles, removeItem } = props;
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  function rename(key: string, name: string) {
-    setItems((prev) =>
-      prev.map((i) => (i.key === key ? { ...i, name } : i)),
-    );
-  }
 
   return (
     <div
@@ -378,11 +371,6 @@ function ImageBank(props: {
               >
                 ✕
               </button>
-              <input
-                value={item.name}
-                onChange={(e) => rename(item.key, e.target.value)}
-                className="w-full mt-1 bg-transparent text-[11px] text-center text-zinc-300 border border-transparent hover:border-zinc-700 focus:border-purple-500 focus:bg-zinc-900 rounded focus:outline-none px-0.5"
-              />
             </div>
           ))}
         </div>

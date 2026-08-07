@@ -34,6 +34,16 @@ export default function VotePage() {
     localStorage.setItem(`myVotes:${code}`, JSON.stringify(myVotes));
   }, [code, myVotes]);
 
+  useEffect(() => {
+    if (!live.snapshot) return;
+    for (const item of live.snapshot.tierList.items) {
+      if (item.imageUrl) {
+        const img = new Image();
+        img.src = `${API_URL}${item.imageUrl}`;
+      }
+    }
+  }, [live.snapshot?.tierList.id]);
+
   function castVote(itemId: string, tierId: string) {
     // Optimista: bloquear el doble voto al instante, revertir si el server lo rechaza
     setMyVotes((v) => ({ ...v, [itemId]: tierId }));
@@ -148,7 +158,6 @@ function ActiveVote(props: {
             🖼
           </div>
         )}
-        <h2 className="text-2xl font-bold mt-3">{item.name}</h2>
       </div>
 
       {voted ? (
@@ -202,9 +211,7 @@ function RevealSection(props: {
 
   return (
     <div className="space-y-5">
-      {item && (
-        <p className="text-center text-lg font-bold">“{item.name}”</p>
-      )}
+
       <RevealBars
         tiers={tiers}
         breakdown={reveal.breakdown}
