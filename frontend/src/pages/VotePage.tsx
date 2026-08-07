@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { API_URL, Item, uid } from '../api';
 import ComparisonView from '../components/ComparisonView';
 import RevealBars from '../components/RevealBars';
+import { useT } from '../i18n';
 import { useLiveSession } from '../live';
 
 function getVoterId(): string {
@@ -24,6 +25,7 @@ function loadMyVotes(code: string): Record<string, string> {
 
 export default function VotePage() {
   const { code = '' } = useParams();
+  const { t } = useT();
   const voterId = useMemo(getVoterId, []);
   const live = useLiveSession(code, { role: 'viewer', voterId });
   const [myVotes, setMyVotes] = useState<Record<string, string>>(() =>
@@ -71,7 +73,7 @@ export default function VotePage() {
   if (!live.snapshot) {
     return (
       <Shell code={code}>
-        <p className="text-zinc-400 text-center mt-16">Conectando...</p>
+        <p className="text-zinc-400 text-center mt-16">{t('connecting')}</p>
       </Shell>
     );
   }
@@ -85,9 +87,7 @@ export default function VotePage() {
       ) : live.status === 'LOBBY' ? (
         <div className="text-center mt-16 space-y-3">
           <p className="text-2xl">⏳</p>
-          <p className="text-zinc-300 text-lg">
-            Esperando a que el streamer comience...
-          </p>
+          <p className="text-zinc-300 text-lg">{t('waitingToStart')}</p>
         </div>
       ) : live.activeItem ? (
         <ActiveVote
@@ -104,9 +104,7 @@ export default function VotePage() {
           myTierId={myVotes[live.reveal.itemId]}
         />
       ) : (
-        <p className="text-zinc-400 text-center mt-16">
-          Esperando el próximo item...
-        </p>
+        <p className="text-zinc-400 text-center mt-16">{t('waitingItem')}</p>
       )}
     </Shell>
   );
@@ -140,6 +138,7 @@ function ActiveVote(props: {
   onVote: (tierId: string) => void;
 }) {
   const { item, myTierId, voteTotal, tiers, onVote } = props;
+  const { t } = useT();
   const voted = !!myTierId;
 
   return (
@@ -160,15 +159,13 @@ function ActiveVote(props: {
 
       {voted ? (
         <div className="text-center space-y-2">
-          <p className="text-emerald-400 font-bold text-lg">✓ Voto registrado</p>
-          <p className="text-zinc-400">
-            Esperando a que el streamer decida...
-          </p>
+          <p className="text-emerald-400 font-bold text-lg">{t('voteRegistered')}</p>
+          <p className="text-zinc-400">{t('waitingDecision')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-2">
           <p className="text-center text-zinc-400 text-sm uppercase tracking-wide">
-            ¿En qué tier va?
+            {t('whichTier')}
           </p>
           {tiers.map((tier) => (
             <button
@@ -186,7 +183,7 @@ function ActiveVote(props: {
       <p className="text-center text-3xl font-black text-purple-400">
         {voteTotal}
         <span className="text-sm font-normal text-zinc-400 ml-2">
-          voto{voteTotal === 1 ? '' : 's'} del chat
+          {voteTotal === 1 ? t('vote') : t('votes')} {t('fromChat')}
         </span>
       </p>
     </div>
@@ -203,7 +200,8 @@ function RevealSection(props: {
   myTierId?: string;
 }) {
   const { reveal, tiers, myTierId } = props;
-  const streamerTier = tiers.find((t) => t.id === reveal.streamerTierId);
+  const { t } = useT();
+  const streamerTier = tiers.find((tier) => tier.id === reveal.streamerTierId);
   const matched = myTierId === reveal.streamerTierId;
 
   return (
@@ -217,27 +215,23 @@ function RevealSection(props: {
       />
       {myTierId ? (
         matched ? (
-          <p className="text-center text-emerald-400 font-bold text-lg">
-            🎯 ¡Coincidiste con el streamer!
-          </p>
+          <p className="text-center text-emerald-400 font-bold text-lg">{t('matchedStreamer')}</p>
         ) : (
           <p className="text-center text-zinc-300">
-            El streamer la puso en{' '}
+            {t('streamerPlacedIn')}{' '}
             <span
               className="inline-block px-2 rounded font-bold text-zinc-900"
               style={{ backgroundColor: streamerTier?.color }}
             >
               {streamerTier?.label}
             </span>{' '}
-            — vos votaste distinto
+            {t('youVotedDifferent')}
           </p>
         )
       ) : (
-        <p className="text-center text-zinc-500">No votaste este item</p>
+        <p className="text-center text-zinc-500">{t('didntVote')}</p>
       )}
-      <p className="text-center text-zinc-500 text-sm">
-        Esperando el próximo item...
-      </p>
+      <p className="text-center text-zinc-500 text-sm">{t('waitingNext')}</p>
     </div>
   );
 }

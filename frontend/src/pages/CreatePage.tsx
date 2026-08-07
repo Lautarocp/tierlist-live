@@ -1,20 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { addItem, createSession, createTierList, Session, uid } from '../api';
+import { useT } from '../i18n';
 
-// Paleta clásica de TierMaker
 const TIER_COLORS = [
-  '#ff7f7f',
-  '#ffbf7f',
-  '#ffdf7f',
-  '#ffff7f',
-  '#bfff7f',
-  '#7fff7f',
-  '#7fffff',
-  '#7fbfff',
-  '#7f7fff',
-  '#bf7fbf',
-  '#a1a1aa',
+  '#ff7f7f', '#ffbf7f', '#ffdf7f', '#ffff7f', '#bfff7f',
+  '#7fff7f', '#7fffff', '#7fbfff', '#7f7fff', '#bf7fbf', '#a1a1aa',
 ];
 
 const DEFAULT_TIERS = [
@@ -25,26 +16,15 @@ const DEFAULT_TIERS = [
   { label: 'D', color: '#7fff7f' },
 ];
 
-interface TierDraft {
-  label: string;
-  color: string;
-}
-
-interface StagedItem {
-  key: string;
-  name: string;
-  file: File;
-  previewUrl: string;
-}
+interface TierDraft { label: string; color: string; }
+interface StagedItem { key: string; name: string; file: File; previewUrl: string; }
 
 function nameFromFile(file: File): string {
-  return file.name
-    .replace(/\.[^.]+$/, '')
-    .replace(/[-_]+/g, ' ')
-    .trim();
+  return file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
 }
 
 export default function CreatePage() {
+  const { t } = useT();
   const [title, setTitle] = useState('');
   const [tiers, setTiers] = useState<TierDraft[]>(DEFAULT_TIERS);
   const [items, setItems] = useState<StagedItem[]>([]);
@@ -56,30 +36,21 @@ export default function CreatePage() {
     setError('');
     const all = [...files];
     if (all.length === 0) {
-      setError(
-        'No llegó ningún archivo. Si arrastrás desde otra página web no funciona: guardá la imagen y subila desde tu explorador de archivos.',
-      );
+      setError(t('dragFromWebError'));
       return;
     }
-    const valid = all.filter((f) =>
-      /^image\/(png|jpe?g|webp|gif)$/.test(f.type),
-    );
+    const valid = all.filter((f) => /^image\/(png|jpe?g|webp|gif)$/.test(f.type));
     const rejected = all.length - valid.length;
     if (rejected > 0) {
-      setError(
-        `${rejected} archivo${rejected === 1 ? '' : 's'} no soportado${
-          rejected === 1 ? '' : 's'
-        } (formato detectado: ${all
-          .filter((f) => !valid.includes(f))
-          .map((f) => f.type || 'desconocido')
-          .join(', ')}). Solo PNG, JPG, WebP o GIF.`,
-      );
+      const s = rejected === 1 ? '' : 's';
+      setError(t('unsupportedFiles', {
+        n: rejected,
+        s,
+        types: all.filter((f) => !valid.includes(f)).map((f) => f.type || 'unknown').join(', '),
+      }));
     }
     const staged = valid.map((file) => ({
-      key: uid(),
-      name: nameFromFile(file),
-      file,
-      previewUrl: URL.createObjectURL(file),
+      key: uid(), name: nameFromFile(file), file, previewUrl: URL.createObjectURL(file),
     }));
     setItems((prev) => [...prev, ...staged]);
   }
@@ -95,16 +66,13 @@ export default function CreatePage() {
   async function handleLaunch() {
     setError('');
     try {
-      setProgress('Creando tier list...');
-      const tierList = await createTierList(
-        title,
-        tiers.map((t, i) => ({ ...t, position: i })),
-      );
+      setProgress(t('creatingTierList'));
+      const tierList = await createTierList(title, tiers.map((t, i) => ({ ...t, position: i })));
       for (let i = 0; i < items.length; i++) {
-        setProgress(`Subiendo items ${i + 1}/${items.length}...`);
+        setProgress(t('uploadingItems', { i: i + 1, n: items.length }));
         await addItem(tierList.id, items[i].name, items[i].file);
       }
-      setProgress('Creando sesión...');
+      setProgress(t('creatingSession'));
       const s = await createSession(tierList.id);
       localStorage.setItem(`streamerToken:${s.code}`, s.streamerToken);
       setSession(s);
@@ -116,11 +84,10 @@ export default function CreatePage() {
   }
 
   const missing = [
-    !title.trim() && 'poné un título arriba',
-    items.length === 0 && 'subí al menos un item',
-    tiers.length < 2 && 'se necesitan al menos 2 tiers',
-    tiers.some((t) => !t.label.trim()) &&
-      'hay una tier sin nombre (nombrala o eliminala con ⚙)',
+    !title.trim() && t('missingTitle'),
+    items.length === 0 && t('missingItems'),
+    tiers.length < 2 && t('missingTiers'),
+    tiers.some((t) => !t.label.trim()) && t('missingTierName'),
   ].filter((m): m is string => !!m);
 
   const canLaunch = !progress && missing.length === 0;
@@ -141,18 +108,15 @@ export default function CreatePage() {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Título de la tier list"
+          placeholder={t('titlePlaceholder')}
           className="w-full bg-transparent text-center text-3xl font-bold placeholder-zinc-600 border-b-2 border-zinc-800 focus:border-purple-500 focus:outline-none pb-2"
         />
 
         {error && (
-          <p className="bg-red-900/50 border border-red-700 rounded px-4 py-2">
-            {error}
-          </p>
+          <p className="bg-red-900/50 border border-red-700 rounded px-4 py-2">{error}</p>
         )}
 
         <TierRows tiers={tiers} setTiers={setTiers} />
-
         <ImageBank items={items} addFiles={addFiles} removeItem={removeItem} />
 
         <button
@@ -160,11 +124,11 @@ export default function CreatePage() {
           disabled={!canLaunch}
           className="w-full py-4 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed font-black text-xl"
         >
-          {progress || 'Iniciar sesión en vivo'}
+          {progress || t('startLive')}
         </button>
         {missing.length > 0 && (
           <p className="text-center text-sm text-yellow-500/90 -mt-3">
-            Para iniciar: {missing.join(' · ')}
+            {t('toStart')} {missing.join(' · ')}
           </p>
         )}
       </div>
@@ -172,15 +136,13 @@ export default function CreatePage() {
   );
 }
 
-function TierRows(props: {
-  tiers: TierDraft[];
-  setTiers: (v: TierDraft[]) => void;
-}) {
+function TierRows(props: { tiers: TierDraft[]; setTiers: (v: TierDraft[]) => void }) {
   const { tiers, setTiers } = props;
+  const { t } = useT();
   const [editing, setEditing] = useState<number | null>(null);
 
   function update(i: number, patch: Partial<TierDraft>) {
-    setTiers(tiers.map((t, j) => (j === i ? { ...t, ...patch } : t)));
+    setTiers(tiers.map((tier, j) => (j === i ? { ...tier, ...patch } : tier)));
   }
 
   function move(i: number, dir: -1 | 1) {
@@ -214,34 +176,20 @@ function TierRows(props: {
             <div className="flex-1 bg-zinc-800 flex items-center px-4">
               {i === 0 && (
                 <span className="text-zinc-600 text-sm select-none">
-                  Los items se colocan acá durante la sesión en vivo
+                  {t('tierPlaceholder')}
                 </span>
               )}
             </div>
             <div className="w-12 shrink-0 bg-zinc-900 flex flex-col items-center justify-center gap-0.5 text-zinc-400">
               <button
                 onClick={() => setEditing(editing === i ? null : i)}
-                title="Editar tier"
+                title={t('editTier')}
                 className={`hover:text-zinc-100 ${editing === i ? 'text-purple-400' : ''}`}
               >
                 ⚙
               </button>
-              <button
-                onClick={() => move(i, -1)}
-                disabled={i === 0}
-                title="Subir"
-                className="hover:text-zinc-100 disabled:opacity-20 text-xs"
-              >
-                ▲
-              </button>
-              <button
-                onClick={() => move(i, 1)}
-                disabled={i === tiers.length - 1}
-                title="Bajar"
-                className="hover:text-zinc-100 disabled:opacity-20 text-xs"
-              >
-                ▼
-              </button>
+              <button onClick={() => move(i, -1)} disabled={i === 0} title={t('moveUp')} className="hover:text-zinc-100 disabled:opacity-20 text-xs">▲</button>
+              <button onClick={() => move(i, 1)} disabled={i === tiers.length - 1} title={t('moveDown')} className="hover:text-zinc-100 disabled:opacity-20 text-xs">▼</button>
             </div>
           </div>
 
@@ -250,7 +198,7 @@ function TierRows(props: {
               <input
                 value={tier.label}
                 onChange={(e) => update(i, { label: e.target.value })}
-                placeholder="Nombre de la tier"
+                placeholder={t('tierNamePlaceholder')}
                 className="bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 focus:outline-none focus:border-purple-500"
               />
               <div className="flex items-center gap-1">
@@ -258,11 +206,7 @@ function TierRows(props: {
                   <button
                     key={c}
                     onClick={() => update(i, { color: c })}
-                    className={`w-6 h-6 rounded ${
-                      tier.color === c
-                        ? 'ring-2 ring-white'
-                        : 'hover:ring-1 hover:ring-zinc-400'
-                    }`}
+                    className={`w-6 h-6 rounded ${tier.color === c ? 'ring-2 ring-white' : 'hover:ring-1 hover:ring-zinc-400'}`}
                     style={{ backgroundColor: c }}
                   />
                 ))}
@@ -279,7 +223,7 @@ function TierRows(props: {
                 disabled={tiers.length <= 2}
                 className="ml-auto text-red-400 hover:text-red-300 disabled:opacity-30 text-sm"
               >
-                Eliminar tier
+                {t('deleteTier')}
               </button>
             </div>
           )}
@@ -287,15 +231,12 @@ function TierRows(props: {
       ))}
       <button
         onClick={() => {
-          setTiers([
-            ...tiers,
-            { label: '', color: TIER_COLORS[tiers.length % TIER_COLORS.length] },
-          ]);
+          setTiers([...tiers, { label: '', color: TIER_COLORS[tiers.length % TIER_COLORS.length] }]);
           setEditing(tiers.length);
         }}
         className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-sm"
       >
-        + Agregar tier
+        {t('addTier')}
       </button>
     </div>
   );
@@ -307,36 +248,26 @@ function ImageBank(props: {
   removeItem: (key: string) => void;
 }) {
   const { items, addFiles, removeItem } = props;
+  const { t } = useT();
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragOver(true);
-      }}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragOver(false);
-        addFiles(e.dataTransfer.files);
-      }}
+      onDrop={(e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }}
       className={`rounded border-2 border-dashed p-4 transition-colors ${
-        dragOver
-          ? 'border-purple-400 bg-purple-500/10'
-          : 'border-zinc-700 bg-zinc-900/50'
+        dragOver ? 'border-purple-400 bg-purple-500/10' : 'border-zinc-700 bg-zinc-900/50'
       }`}
     >
       <div className="flex items-center justify-between mb-3">
-        <p className="text-zinc-400 text-sm">
-          Items ({items.length}) — arrastrá imágenes acá o
-        </p>
+        <p className="text-zinc-400 text-sm">{t('imageBankLabel', { n: items.length })}</p>
         <button
           onClick={() => inputRef.current?.click()}
           className="px-4 py-2 rounded bg-zinc-700 hover:bg-zinc-600 font-bold text-sm"
         >
-          Subir imágenes
+          {t('uploadImages')}
         </button>
         <input
           ref={inputRef}
@@ -344,29 +275,20 @@ function ImageBank(props: {
           multiple
           accept="image/png,image/jpeg,image/webp,image/gif"
           className="hidden"
-          onChange={(e) => {
-            if (e.target.files) addFiles(e.target.files);
-            e.target.value = '';
-          }}
+          onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }}
         />
       </div>
 
       {items.length === 0 ? (
-        <p className="text-center text-zinc-600 py-8 select-none">
-          Todavía no hay items
-        </p>
+        <p className="text-center text-zinc-600 py-8 select-none">{t('noItems')}</p>
       ) : (
         <div className="flex flex-wrap gap-3">
           {items.map((item) => (
             <div key={item.key} className="w-20 group relative">
-              <img
-                src={item.previewUrl}
-                alt={item.name}
-                className="w-20 h-20 object-cover rounded"
-              />
+              <img src={item.previewUrl} alt={item.name} className="w-20 h-20 object-cover rounded" />
               <button
                 onClick={() => removeItem(item.key)}
-                title="Quitar"
+                title={t('removeItem')}
                 className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-xs leading-none hidden group-hover:block"
               >
                 ✕
@@ -380,6 +302,7 @@ function ImageBank(props: {
 }
 
 function SessionInfo({ session }: { session: Session }) {
+  const { t } = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const voteUrl = `${window.location.origin}/vote/${session.code}`;
 
@@ -391,14 +314,9 @@ function SessionInfo({ session }: { session: Session }) {
 
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 text-center space-y-4">
-      <p className="text-zinc-400">Código de sesión</p>
-      <p className="text-5xl font-mono font-bold tracking-widest text-purple-400">
-        {session.code}
-      </p>
-      <a
-        href={voteUrl}
-        className="block text-purple-400 hover:text-purple-300 underline break-all"
-      >
+      <p className="text-zinc-400">{t('sessionCode')}</p>
+      <p className="text-5xl font-mono font-bold tracking-widest text-purple-400">{session.code}</p>
+      <a href={voteUrl} className="block text-purple-400 hover:text-purple-300 underline break-all">
         {voteUrl}
       </a>
       <div className="flex justify-center">
@@ -408,7 +326,7 @@ function SessionInfo({ session }: { session: Session }) {
         href={`/host/${session.code}`}
         className="inline-block px-6 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold"
       >
-        Ir a la vista de host →
+        {t('goToHost')}
       </a>
     </div>
   );

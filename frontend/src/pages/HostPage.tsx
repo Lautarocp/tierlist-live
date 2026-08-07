@@ -11,11 +11,13 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { API_URL, Item, Tier } from '../api';
+import { useT } from '../i18n';
 import { Odometer } from '../components/RevealBars';
 import { Comparison, RevealedItem, useLiveSession } from '../live';
 
 export default function HostPage() {
   const { code = '' } = useParams();
+  const { t } = useT();
   const token = localStorage.getItem(`streamerToken:${code}`) ?? undefined;
   const live = useLiveSession(code, { role: 'streamer', token });
   const [actionError, setActionError] = useState('');
@@ -60,9 +62,7 @@ export default function HostPage() {
   if (!token) {
     return (
       <Shell>
-        <p className="text-red-400 text-xl text-center mt-20">
-          No hay token de streamer para esta sesión en este navegador.
-        </p>
+        <p className="text-red-400 text-xl text-center mt-20">{t('noStreamerToken')}</p>
       </Shell>
     );
   }
@@ -76,7 +76,7 @@ export default function HostPage() {
   if (!live.snapshot) {
     return (
       <Shell>
-        <p className="text-zinc-400 text-center mt-20">Conectando...</p>
+        <p className="text-zinc-400 text-center mt-20">{t('connecting')}</p>
       </Shell>
     );
   }
@@ -92,14 +92,12 @@ export default function HostPage() {
         <h1 className="text-2xl font-bold">{tierList.title}</h1>
         <div className="flex items-center gap-4 text-zinc-400">
           <span>
-            Código:{' '}
+            {t('codeLabel')}{' '}
             <span className="font-mono font-bold text-purple-400 text-xl tracking-widest">
               {code}
             </span>
           </span>
-          <span>
-            {resolvedCount}/{totalItems} items
-          </span>
+          <span>{resolvedCount}/{totalItems} items</span>
         </div>
       </header>
 
@@ -149,6 +147,7 @@ export default function HostPage() {
 }
 
 function ResultsBoards({ comparison }: { comparison: Comparison }) {
+  const { t } = useT();
   const { tiers, items, matchPct } = comparison;
 
   const board = (title: string, tierOf: (e: (typeof items)[number]) => string) => (
@@ -198,7 +197,7 @@ function ResultsBoards({ comparison }: { comparison: Comparison }) {
     <div className="space-y-8">
       <div className="text-center">
         <p className="text-zinc-400 uppercase tracking-wide text-sm">
-          Coincidencia streamer vs chat
+          {t('matchLabel')}
         </p>
         <p
           className={`text-6xl font-black ${
@@ -212,11 +211,9 @@ function ResultsBoards({ comparison }: { comparison: Comparison }) {
           {matchPct}%
         </p>
       </div>
-      {board('Streamer', (e) => e.streamerTierId)}
-      {board('Chat', (e) => e.chatTierId)}
-      <p className="text-center text-sm text-zinc-500">
-        Los items con borde verde coinciden en ambas listas
-      </p>
+      {board(t('streamerBoard'), (e) => e.streamerTierId)}
+      {board(t('chatBoard'), (e) => e.chatTierId)}
+      <p className="text-center text-sm text-zinc-500">{t('greenBorderNote')}</p>
     </div>
   );
 }
@@ -379,6 +376,7 @@ function CenterZone(props: {
   onFinish: () => void;
 }) {
   const { live, noItemsLeft, onStart, onNext, onFinish } = props;
+  const { t } = useT();
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
@@ -397,14 +395,9 @@ function CenterZone(props: {
   if (live.status === 'LOBBY') {
     return (
       <div className="text-center space-y-4">
-        <p className="text-zinc-400">
-          Compartí el código con tu audiencia y arrancá cuando quieras.
-        </p>
-        <button
-          onClick={onStart}
-          className="px-10 py-4 rounded-xl bg-purple-600 hover:bg-purple-500 font-black text-2xl"
-        >
-          COMENZAR
+        <p className="text-zinc-400">{t('shareCode')}</p>
+        <button onClick={onStart} className="px-10 py-4 rounded-xl bg-purple-600 hover:bg-purple-500 font-black text-2xl">
+          {t('begin')}
         </button>
       </div>
     );
@@ -413,14 +406,12 @@ function CenterZone(props: {
   if (live.activeItem) {
     return (
       <div className="text-center space-y-4">
-        <p className="text-zinc-400 uppercase tracking-wide text-sm">
-          Arrastrá el item a una tier para revelar los votos
-        </p>
+        <p className="text-zinc-400 uppercase tracking-wide text-sm">{t('dragToTier')}</p>
         <DraggableItem item={live.activeItem} />
         <p className="text-5xl font-black text-purple-400">
           {live.voteTotal}
           <span className="text-lg font-normal text-zinc-400 ml-2">
-            voto{live.voteTotal === 1 ? '' : 's'}
+            {live.voteTotal === 1 ? t('vote') : t('votes')} {t('fromChat')}
           </span>
         </p>
       </div>
@@ -428,29 +419,22 @@ function CenterZone(props: {
   }
 
   if (live.reveal && !pending) {
+    const tv = live.reveal.totalVotes;
     return (
       <div className="space-y-4 max-w-xl mx-auto">
         <p className="text-center text-xl font-bold">
-          Así votó el chat —{' '}
-          {live.reveal.totalVotes} voto
-          {live.reveal.totalVotes === 1 ? '' : 's'}
+          {t('chatVoted')} {tv} {tv === 1 ? t('vote') : t('votes')}
         </p>
         <div className="flex justify-center gap-3">
           {!noItemsLeft ? (
-            <button
-              onClick={handleNext}
-              className="px-8 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-lg"
-            >
-              Siguiente item →
+            <button onClick={handleNext} className="px-8 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-lg">
+              {t('nextItem')}
             </button>
           ) : (
-            <p className="text-yellow-400 self-center">No quedan items.</p>
+            <p className="text-yellow-400 self-center">{t('noItemsLeft')}</p>
           )}
-          <button
-            onClick={onFinish}
-            className="px-8 py-3 rounded-lg bg-zinc-700 hover:bg-zinc-600 font-bold text-lg"
-          >
-            Finalizar
+          <button onClick={onFinish} className="px-8 py-3 rounded-lg bg-zinc-700 hover:bg-zinc-600 font-bold text-lg">
+            {t('finish')}
           </button>
         </div>
       </div>
@@ -458,22 +442,16 @@ function CenterZone(props: {
   }
 
   if (pending) {
-    return <p className="text-center text-zinc-400">Cargando siguiente item...</p>;
+    return <p className="text-center text-zinc-400">{t('loadingNext')}</p>;
   }
 
   return (
     <div className="text-center space-y-4">
-      <button
-        onClick={handleNext}
-        className="px-8 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-lg"
-      >
-        Siguiente item →
+      <button onClick={handleNext} className="px-8 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-lg">
+        {t('nextItem')}
       </button>
-      <button
-        onClick={onFinish}
-        className="block mx-auto text-zinc-400 hover:text-zinc-200 underline"
-      >
-        Finalizar sesión
+      <button onClick={onFinish} className="block mx-auto text-zinc-400 hover:text-zinc-200 underline">
+        {t('finishSession')}
       </button>
     </div>
   );

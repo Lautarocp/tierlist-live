@@ -1,4 +1,5 @@
 import { API_URL, Item, Tier } from '../api';
+import { useT } from '../i18n';
 import { Comparison } from '../live';
 
 function ItemThumb({ item, matched }: { item: Item; matched: boolean }) {
@@ -66,13 +67,14 @@ export default function ComparisonView({
 }: {
   comparison: Comparison;
 }) {
+  const { t } = useT();
   const { tiers, items, matchPct } = comparison;
 
   return (
     <div className="space-y-6">
       <div className="text-center">
         <p className="text-zinc-400 uppercase tracking-wide text-sm">
-          Coincidencia streamer vs chat
+          {t('matchLabel')}
         </p>
         <p
           className={`text-6xl font-black ${
@@ -89,7 +91,7 @@ export default function ComparisonView({
 
       <div className="flex flex-col lg:flex-row gap-6">
         <TierGrid
-          title="Streamer"
+          title={t('streamerBoard')}
           tiers={tiers}
           placement={(tierId) =>
             items
@@ -98,7 +100,7 @@ export default function ComparisonView({
           }
         />
         <TierGrid
-          title="Chat"
+          title={t('chatBoard')}
           tiers={tiers}
           placement={(tierId) =>
             items
@@ -108,9 +110,7 @@ export default function ComparisonView({
         />
       </div>
 
-      <p className="text-center text-sm text-zinc-500">
-        Los items con borde verde coinciden en ambas listas
-      </p>
+      <p className="text-center text-sm text-zinc-500">{t('greenBorderNote')}</p>
     </div>
   );
 }
