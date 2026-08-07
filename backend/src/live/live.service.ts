@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Item, SessionStatus, Tier } from '@prisma/client';
 import { randomInt } from 'crypto';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
 import { PersistenceService } from './persistence.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -33,7 +35,7 @@ export class LiveError extends Error {}
 
 @Injectable()
 export class LiveService {
-  // Cache en memoria del camino crítico de votos (un solo proceso Node en MVP)
+  private readonly logger = new Logger(LiveService.name);
   private readonly sessions = new Map<string, LiveSession>();
 
   constructor(
@@ -275,7 +277,19 @@ export class LiveService {
       where: { id: { in: [...live.tierIds] } },
       orderBy: { position: 'asc' },
     });
-    return this.buildComparison(live.id, tiers, live.items);
+    const comparison = await this.buildComparison(live.id, tiers, live.items);
+    this.cleanupImages(live.items);
+    return comparison;
+  }
+
+  private cleanupImages(items: Item[]) {
+    for (const item of items) {
+      if (!item.imageUrl) continue;
+      const filename = item.imageUrl.replace(/^\/uploads\//, '');
+      unlink(join('./uploads', filename)).catch((err) => {
+        this.logger.warn(`Could not delete upload ${filename}: ${err.message}`);
+      });
+    }
   }
 
   private async buildComparison(
