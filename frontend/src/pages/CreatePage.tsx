@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Cog } from 'lucide-react';
 import QRCode from 'qrcode';
 import { addItem, createSession, createTierList, Session, uid } from '../api';
 import { useT } from '../i18n';
@@ -234,7 +234,7 @@ function TierRows(props: { tiers: TierDraft[]; setTiers: (v: TierDraft[]) => voi
                 title={t('editTier')}
                 className={`hover:text-zinc-100 ${isEditing ? 'text-purple-400' : ''}`}
               >
-                <Settings2 size={18} />
+                <Cog size={18} />
               </button>
               <button onClick={() => move(i, -1)} disabled={i === 0} title={t('moveUp')} className="hover:text-zinc-100 disabled:opacity-20">
                 <ChevronUp size={18} />
