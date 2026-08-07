@@ -162,29 +162,76 @@ function TierRows(props: { tiers: TierDraft[]; setTiers: (v: TierDraft[]) => voi
 
   return (
     <div className="border border-zinc-700 rounded overflow-hidden">
-      {tiers.map((tier, i) => (
-        <div key={i}>
-          <div className="flex items-stretch border-b border-zinc-950 last:border-b-0 min-h-20">
+      {tiers.map((tier, i) => {
+        const isEditing = editing === i;
+        return (
+          <div
+            key={i}
+            className="flex items-stretch border-b border-zinc-950 last:border-b-0"
+            style={{ minHeight: isEditing ? '4rem' : '5rem' }}
+          >
+            {/* Bloque de color: label estático o input inline */}
             <div
               className="w-24 sm:w-28 shrink-0 flex items-center justify-center p-2"
               style={{ backgroundColor: tier.color }}
             >
-              <span className="font-bold text-zinc-900 text-center break-words leading-tight">
-                {tier.label}
-              </span>
-            </div>
-            <div className="flex-1 bg-zinc-800 flex items-center px-4">
-              {i === 0 && (
-                <span className="text-zinc-600 text-sm select-none">
-                  {t('tierPlaceholder')}
+              {isEditing ? (
+                <input
+                  autoFocus
+                  value={tier.label}
+                  onChange={(e) => update(i, { label: e.target.value })}
+                  placeholder={t('tierNamePlaceholder')}
+                  className="w-full bg-transparent font-bold text-zinc-900 text-center placeholder-zinc-600 focus:outline-none"
+                />
+              ) : (
+                <span className="font-bold text-zinc-900 text-center break-words leading-tight">
+                  {tier.label}
                 </span>
               )}
             </div>
+
+            {/* Área central: placeholder de items o paleta de colores */}
+            <div className="flex-1 bg-zinc-800 flex items-center px-3 gap-2 flex-wrap min-w-0">
+              {isEditing ? (
+                <>
+                  {TIER_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => update(i, { color: c })}
+                      className={`w-6 h-6 rounded shrink-0 ${tier.color === c ? 'ring-2 ring-white' : 'hover:ring-1 hover:ring-zinc-400'}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    value={tier.color}
+                    onChange={(e) => update(i, { color: e.target.value })}
+                    title="Color personalizado"
+                    className="w-6 h-6 rounded cursor-pointer bg-transparent shrink-0"
+                  />
+                  <button
+                    onClick={() => remove(i)}
+                    disabled={tiers.length <= 2}
+                    className="ml-auto text-red-400 hover:text-red-300 disabled:opacity-30 text-sm shrink-0"
+                  >
+                    {t('deleteTier')}
+                  </button>
+                </>
+              ) : (
+                i === 0 && (
+                  <span className="text-zinc-600 text-sm select-none">
+                    {t('tierPlaceholder')}
+                  </span>
+                )
+              )}
+            </div>
+
+            {/* Controles */}
             <div className="w-12 shrink-0 bg-zinc-900 flex flex-col items-center justify-center gap-0.5 text-zinc-400">
               <button
-                onClick={() => setEditing(editing === i ? null : i)}
+                onClick={() => setEditing(isEditing ? null : i)}
                 title={t('editTier')}
-                className={`hover:text-zinc-100 ${editing === i ? 'text-purple-400' : ''}`}
+                className={`hover:text-zinc-100 ${isEditing ? 'text-purple-400' : ''}`}
               >
                 ⚙
               </button>
@@ -192,43 +239,8 @@ function TierRows(props: { tiers: TierDraft[]; setTiers: (v: TierDraft[]) => voi
               <button onClick={() => move(i, 1)} disabled={i === tiers.length - 1} title={t('moveDown')} className="hover:text-zinc-100 disabled:opacity-20 text-xs">▼</button>
             </div>
           </div>
-
-          {editing === i && (
-            <div className="bg-zinc-900 border-b border-zinc-950 px-4 py-3 flex flex-wrap items-center gap-3">
-              <input
-                value={tier.label}
-                onChange={(e) => update(i, { label: e.target.value })}
-                placeholder={t('tierNamePlaceholder')}
-                className="bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 focus:outline-none focus:border-purple-500"
-              />
-              <div className="flex items-center gap-1">
-                {TIER_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => update(i, { color: c })}
-                    className={`w-6 h-6 rounded ${tier.color === c ? 'ring-2 ring-white' : 'hover:ring-1 hover:ring-zinc-400'}`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-                <input
-                  type="color"
-                  value={tier.color}
-                  onChange={(e) => update(i, { color: e.target.value })}
-                  title="Color personalizado"
-                  className="w-6 h-6 rounded cursor-pointer bg-transparent ml-1"
-                />
-              </div>
-              <button
-                onClick={() => remove(i)}
-                disabled={tiers.length <= 2}
-                className="ml-auto text-red-400 hover:text-red-300 disabled:opacity-30 text-sm"
-              >
-                {t('deleteTier')}
-              </button>
-            </div>
-          )}
-        </div>
-      ))}
+        );
+      })}
       <button
         onClick={() => {
           setTiers([...tiers, { label: '', color: TIER_COLORS[tiers.length % TIER_COLORS.length] }]);
