@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { LangProvider, LangToggle, useT } from './i18n';
 import CreatePage from './pages/CreatePage';
@@ -27,6 +28,48 @@ function WarmupGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function WelcomeModal() {
+  const { t } = useT();
+  const [open, setOpen] = useState(() => !localStorage.getItem('welcomeSeen'));
+
+  function dismiss() {
+    localStorage.setItem('welcomeSeen', '1');
+    setOpen(false);
+  }
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+        <h2 className="text-2xl font-black text-center text-purple-400">{t('welcomeTitle')}</h2>
+
+        <div className="space-y-1">
+          <p className="font-bold text-zinc-100">{t('welcomeStreamerTitle')}</p>
+          <p className="text-zinc-400 text-sm">{t('welcomeStreamerDesc')}</p>
+        </div>
+
+        <div className="space-y-1">
+          <p className="font-bold text-zinc-100">{t('welcomeViewerTitle')}</p>
+          <p className="text-zinc-400 text-sm">{t('welcomeViewerDesc')}</p>
+        </div>
+
+        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 space-y-1">
+          <p className="font-bold text-yellow-400 text-sm">{t('welcomeDelayTitle')}</p>
+          <p className="text-yellow-200/70 text-sm">{t('welcomeDelayDesc')}</p>
+        </div>
+
+        <button
+          onClick={dismiss}
+          className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 font-black text-lg transition-colors"
+        >
+          {t('welcomeBtn')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function GithubLink() {
   return (
     <a
@@ -44,6 +87,7 @@ export default function App() {
   return (
     <LangProvider>
       <LangToggle />
+      <WelcomeModal />
       <GithubLink />
       <WarmupGate>
         <BrowserRouter>

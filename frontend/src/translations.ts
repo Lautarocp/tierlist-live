@@ -61,6 +61,16 @@ const T = {
   chatBoard:              { es: 'Chat',                           en: 'Chat' },
 
   newTierList:            { es: 'Nueva tier list',               en: 'New tier list' },
+  // --- Welcome modal ---
+  welcomeTitle:           { es: '¿Cómo funciona?',               en: 'How does it work?' },
+  welcomeStreamerTitle:   { es: '🎮 Streamer',                    en: '🎮 Streamer' },
+  welcomeStreamerDesc:    { es: 'Creá la tier list, compartí el código con tu audiencia y arrastrá cada item a la tier que le corresponde en vivo.', en: 'Create the tier list, share the code with your audience, and drag each item to the tier you think it belongs to live.' },
+  welcomeViewerTitle:    { es: '👥 Audiencia',                   en: '👥 Audience' },
+  welcomeViewerDesc:     { es: 'Votá en qué tier va el item ANTES de que el streamer decida. Solo podés votar una vez por item.', en: 'Vote which tier the item belongs to BEFORE the streamer decides. You can only vote once per item.' },
+  welcomeDelayTitle:     { es: '⏱ Delay del stream',             en: '⏱ Stream delay' },
+  welcomeDelayDesc:      { es: 'El stream puede tener varios segundos de delay. El streamer puede decidir antes de que veas el item en pantalla — ¡votá rápido apenas aparezca!', en: 'The stream may have several seconds of delay. The streamer might decide before you even see the item on screen — vote fast as soon as it appears!' },
+  welcomeBtn:            { es: '¡Entendido!',                    en: 'Got it!' },
+
   warmupTitle:            { es: 'Despertando el servidor...',    en: 'Waking up the server...' },
   warmupDesc:             { es: 'Render apaga los servidores tras 15 min de inactividad. El reinicio tarda ~1 minuto.', en: 'Render shuts down servers after 15 min of inactivity. Restart takes ~1 minute.' },
   warmupElapsed:          { es: '{s}s transcurridos',            en: '{s}s elapsed' },
