@@ -27,10 +27,24 @@ function WarmupGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function GithubLink() {
+  return (
+    <a
+      href="https://github.com/Lautarocp"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="fixed bottom-3 right-3 text-zinc-600 hover:text-zinc-300 text-xs font-mono transition-colors"
+    >
+      github.com/Lautarocp
+    </a>
+  );
+}
+
 export default function App() {
   return (
     <LangProvider>
       <LangToggle />
+      <GithubLink />
       <WarmupGate>
         <BrowserRouter>
           <Routes>
