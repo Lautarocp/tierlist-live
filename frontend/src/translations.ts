@@ -61,6 +61,9 @@ const T = {
   chatBoard:              { es: 'Chat',                           en: 'Chat' },
 
   newTierList:            { es: 'Nueva tier list',               en: 'New tier list' },
+  warmupTitle:            { es: 'Despertando el servidor...',    en: 'Waking up the server...' },
+  warmupDesc:             { es: 'Render apaga los servidores tras 15 min de inactividad. El reinicio tarda ~1 minuto.', en: 'Render shuts down servers after 15 min of inactivity. Restart takes ~1 minute.' },
+  warmupElapsed:          { es: '{s}s transcurridos',            en: '{s}s elapsed' },
 
   // --- Shared ---
   vote:                   { es: 'voto',                           en: 'vote' },
