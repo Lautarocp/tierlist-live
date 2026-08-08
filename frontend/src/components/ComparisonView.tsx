@@ -27,7 +27,6 @@ function ItemThumb({ item, matched }: { item: Item; matched: boolean }) {
           {item.name}
         </div>
       )}
-      <p className="text-[10px] text-zinc-400 truncate mt-0.5">{item.name}</p>
     </div>
   );
 }
