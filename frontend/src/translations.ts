@@ -60,6 +60,8 @@ const T = {
   streamerBoard:          { es: 'Streamer',                       en: 'Streamer' },
   chatBoard:              { es: 'Chat',                           en: 'Chat' },
 
+  newTierList:            { es: 'Nueva tier list',               en: 'New tier list' },
+
   // --- Shared ---
   vote:                   { es: 'voto',                           en: 'vote' },
   votes:                  { es: 'votos',                          en: 'votes' },

@@ -9,7 +9,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { API_URL, Item, Tier } from '../api';
 import { useT } from '../i18n';
 import { Odometer } from '../components/RevealBars';
@@ -148,6 +148,7 @@ export default function HostPage() {
 
 function ResultsBoards({ comparison }: { comparison: Comparison }) {
   const { t } = useT();
+  const navigate = useNavigate();
   const { tiers, items, matchPct } = comparison;
 
   const board = (title: string, tierOf: (e: (typeof items)[number]) => string) => (
@@ -214,6 +215,14 @@ function ResultsBoards({ comparison }: { comparison: Comparison }) {
       {board(t('streamerBoard'), (e) => e.streamerTierId)}
       {board(t('chatBoard'), (e) => e.chatTierId)}
       <p className="text-center text-sm text-zinc-500">{t('greenBorderNote')}</p>
+      <div className="text-center pt-4">
+        <button
+          onClick={() => navigate('/create')}
+          className="px-10 py-4 rounded-xl bg-purple-600 hover:bg-purple-500 font-black text-xl"
+        >
+          {t('newTierList')}
+        </button>
+      </div>
     </div>
   );
 }
