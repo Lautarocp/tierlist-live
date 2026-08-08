@@ -1,38 +1,17 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-
-const FLUSH_INTERVAL_MS = 2000;
+import { Injectable } from '@nestjs/common';
+import { StoreService, StoredResult } from '../store/store.service';
 
 @Injectable()
-export class PersistenceService implements OnModuleDestroy {
-  private readonly logger = new Logger(PersistenceService.name);
-  private buffer: Prisma.ItemResultCreateManyInput[] = [];
-  private flushing: Promise<void> = Promise.resolve();
-  private readonly timer = setInterval(() => void this.flush(), FLUSH_INTERVAL_MS);
+export class PersistenceService {
+  constructor(private readonly store: StoreService) {}
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  enqueue(result: Prisma.ItemResultCreateManyInput) {
-    this.buffer.push(result);
+  enqueue(sessionId: string, result: StoredResult) {
+    const list = this.store.results.get(sessionId) ?? [];
+    list.push(result);
+    this.store.results.set(sessionId, list);
   }
 
   flush(): Promise<void> {
-    this.flushing = this.flushing.then(async () => {
-      if (this.buffer.length === 0) return;
-      const batch = this.buffer.splice(0);
-      try {
-        await this.prisma.itemResult.createMany({ data: batch });
-      } catch (err) {
-        this.buffer.unshift(...batch);
-        this.logger.error(`Fallo al persistir ${batch.length} resultados`, err);
-      }
-    });
-    return this.flushing;
-  }
-
-  async onModuleDestroy() {
-    clearInterval(this.timer);
-    await this.flush();
+    return Promise.resolve();
   }
 }

@@ -1,43 +1,36 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes, randomInt } from 'crypto';
-import { PrismaService } from '../prisma/prisma.service';
+import { randomUUID } from 'crypto';
+import { StoreService } from '../store/store.service';
 
-// Sin caracteres ambiguos al dictar en voz alta (0/O, 1/I/L)
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 6;
 
 @Injectable()
 export class SessionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly store: StoreService) {}
 
-  async create(tierListId: string) {
-    const tierList = await this.prisma.tierList.findUnique({
-      where: { id: tierListId },
-      include: { _count: { select: { items: true } } },
-    });
+  create(tierListId: string) {
+    const tierList = this.store.tierLists.get(tierListId);
     if (!tierList) throw new NotFoundException('Tier list no encontrada');
-    if (tierList._count.items === 0) {
+    if (tierList.items.length === 0) {
       throw new BadRequestException('La tier list no tiene items');
     }
 
     for (let attempt = 0; attempt < 5; attempt++) {
       const code = this.generateCode();
-      const existing = await this.prisma.session.findUnique({
-        where: { code },
-        select: { id: true },
-      });
-      if (existing) continue;
-      return this.prisma.session.create({
-        data: {
-          tierListId,
-          code,
-          streamerToken: randomBytes(24).toString('hex'),
-        },
-      });
+      if (this.store.sessionsByCode.has(code)) continue;
+      const session = {
+        id: randomUUID(),
+        code,
+        tierListId,
+        tierList,
+        status: 'LOBBY' as const,
+        streamerToken: randomBytes(24).toString('hex'),
+      };
+      this.store.sessionsByCode.set(code, session);
+      this.store.sessionsById.set(session.id, session);
+      return session;
     }
     throw new BadRequestException('No se pudo generar un código único');
   }

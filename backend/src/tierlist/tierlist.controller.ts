@@ -10,13 +10,12 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { writeFile } from 'fs/promises';
 import { memoryStorage } from 'multer';
-import { join } from 'path';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 import { CreateTierListDto } from './dto/create-tierlist.dto';
 import { TierListService } from './tierlist.service';
+import { StoreService } from '../store/store.service';
 
 const imageUpload = {
   storage: memoryStorage(),
@@ -29,7 +28,10 @@ const imageUpload = {
 
 @Controller('tierlists')
 export class TierListController {
-  constructor(private readonly service: TierListService) {}
+  constructor(
+    private readonly service: TierListService,
+    private readonly store: StoreService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateTierListDto) {
@@ -50,14 +52,16 @@ export class TierListController {
   ) {
     if (file) {
       const filename = `${randomUUID()}.jpg`;
+      let buffer: Buffer;
       try {
-        await sharp(file.buffer)
+        buffer = await sharp(file.buffer)
           .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 82 })
-          .toFile(join('./uploads', filename));
+          .toBuffer();
       } catch {
         throw new BadRequestException('El archivo no es una imagen válida');
       }
+      this.store.images.set(filename, buffer);
       file.filename = filename;
     }
     return this.service.addItem(id, name, file);

@@ -1,9 +1,3 @@
-databases:
-  - name: tierlist-db
-    plan: free
-    databaseName: tierlist
-    user: tierlist
-
 services:
   - type: redis
     name: tierlist-redis
@@ -15,14 +9,10 @@ services:
     name: tierlist-backend
     env: node
     rootDir: backend
-    buildCommand: npm install --include=dev && npx prisma generate && npm run build
-    startCommand: npx prisma migrate deploy && node dist/main.js
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: node dist/main.js
     plan: free
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: tierlist-db
-          property: connectionString
       - key: REDIS_URL
         fromService:
           name: tierlist-redis
